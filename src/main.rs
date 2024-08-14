@@ -458,7 +458,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         *prio_fee = prio_fee.saturating_sub(1_000);
                                     }
                                     if difficulty > 24 {
-                                        *prio_fee = 10000
+                                        *prio_fee = 50000
                                     }
                                 }
                                 // reset nonce
@@ -483,7 +483,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                 }
                                 // sent error
-                                if i >= 2 {
+                                if i >= 1 {
                                     // 进程退出
                                     std::process::exit(1);
                                     // info!("Failed to send after 3 attempts. Discarding and refreshing data.");
