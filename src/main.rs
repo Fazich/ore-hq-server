@@ -383,7 +383,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         difficulty
                     );
                     // 如果难度大于等于27，则设置优先费为难度乘以 10000， 否则使用之前的优先费
-                    if difficulty > 20 {
+                    if difficulty > 24 {
                         let mut prio_fee = app_prio_fee.lock().await;
                         *prio_fee = (difficulty as u64 - 20) * 15000;
                     }
@@ -455,7 +455,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         *prio_fee = prio_fee.saturating_sub(1_000);
                                     }
                                     let difficulty = solution.to_hash().difficulty();
-                                    if difficulty > 20 {
+                                    if difficulty > 24 {
                                         *prio_fee = 10000
                                     }
                                 }
