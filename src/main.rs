@@ -482,21 +482,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }
                                 // sent error
                                 if i >= 2 {
-                                    info!("Failed to send after 3 attempts. Discarding and refreshing data.");
-                                    // reset nonce
-                                    {
-                                        let mut nonce = app_nonce.lock().await;
-                                        *nonce = 0;
-                                    }
-                                    // reset epoch hashes
-                                    {
-                                        info!("reset epoch hashes");
-                                        let mut mut_epoch_hashes = app_epoch_hashes.write().await;
-                                        mut_epoch_hashes.best_hash.solution = None;
-                                        mut_epoch_hashes.best_hash.difficulty = 0;
-                                        mut_epoch_hashes.submissions = HashMap::new();
-                                    }
-                                    break;
+                                    // 进程退出
+                                    std::process::exit(1);
+                                    // info!("Failed to send after 3 attempts. Discarding and refreshing data.");
+                                    // // reset nonce
+                                    // {
+                                    //     let mut nonce = app_nonce.lock().await;
+                                    //     *nonce = 0;
+                                    // }
+                                    // // reset epoch hashes
+                                    // {
+                                    //     info!("reset epoch hashes");
+                                    //     let mut mut_epoch_hashes = app_epoch_hashes.write().await;
+                                    //     mut_epoch_hashes.best_hash.solution = None;
+                                    //     mut_epoch_hashes.best_hash.difficulty = 0;
+                                    //     mut_epoch_hashes.submissions = HashMap::new();
+                                    // }
+                                    // break;
                                 }
                             }
                             tokio::time::sleep(Duration::from_millis(500)).await;
