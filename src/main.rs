@@ -376,12 +376,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         for i in 0..3 {
                             let mut ixs = vec![];
                             // TODO: set cu's
-                            let prio_fee = { app_prio_fee.lock().await.clone() };
-                            if difficulty > 24 {
+                            let prio_fee = {
                                 let mut prio_fee = app_prio_fee.lock().await;
-                                *prio_fee = (difficulty as u64 - 20) * 15000;
-                                info!("Setting priority fee to {}", *prio_fee);
-                            }
+                                if difficulty > 24 {
+                                    *prio_fee = (difficulty as u64 - 20) * 15000;
+                                    info!("Setting priority fee to {}", *prio_fee);
+                                }
+                                *prio_fee
+                            };
 
                             let cu_limit_ix =
                                 ComputeBudgetInstruction::set_compute_unit_limit(480000);
