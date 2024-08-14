@@ -359,44 +359,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let solution = { app_epoch_hashes.read().await.best_hash.solution.clone() };
                 if let Some(solution) = solution {
                     let signer = app_wallet.clone();
-                    let mut ixs = vec![];
-                    // TODO: set cu's
-                    let prio_fee = { app_prio_fee.lock().await.clone() };
-
-                    let cu_limit_ix = ComputeBudgetInstruction::set_compute_unit_limit(480000);
-                    ixs.push(cu_limit_ix);
-
-                    let prio_fee_ix = ComputeBudgetInstruction::set_compute_unit_price(prio_fee);
-                    ixs.push(prio_fee_ix);
-
-                    let noop_ix = get_auth_ix(signer.pubkey());
-                    ixs.push(noop_ix);
 
                     // TODO: choose the highest balance bus
                     let bus = rand::thread_rng().gen_range(0..BUS_COUNT);
                     let difficulty = solution.to_hash().difficulty();
 
-                    let ix_mine = get_mine_ix(signer.pubkey(), solution, bus);
-                    ixs.push(ix_mine);
                     info!(
                         "Starting mine submission attempts with difficulty {}.",
                         difficulty
                     );
-                    // 如果难度大于等于27，则设置优先费为难度乘以 10000， 否则使用之前的优先费
-                    if difficulty > 24 {
-                        let mut prio_fee = app_prio_fee.lock().await;
-                        *prio_fee = (difficulty as u64 - 20) * 15000;
-                    }
 
                     if let Ok((hash, _slot)) = rpc_client
                         .get_latest_blockhash_with_commitment(rpc_client.commitment())
                         .await
                     {
-                        let mut tx = Transaction::new_with_payer(&ixs, Some(&signer.pubkey()));
-
-                        tx.sign(&[&signer], hash);
-
                         for i in 0..3 {
+                            let mut ixs = vec![];
+                            // TODO: set cu's
+                            let prio_fee = { app_prio_fee.lock().await.clone() };
+
+                            let cu_limit_ix =
+                                ComputeBudgetInstruction::set_compute_unit_limit(480000);
+                            ixs.push(cu_limit_ix);
+
+                            let prio_fee_ix =
+                                ComputeBudgetInstruction::set_compute_unit_price(prio_fee);
+                            ixs.push(prio_fee_ix);
+
+                            let noop_ix = get_auth_ix(signer.pubkey());
+                            ixs.push(noop_ix);
+
+                            let ix_mine = get_mine_ix(signer.pubkey(), solution, bus);
+                            ixs.push(ix_mine);
+
+                            // 如果难度大于等于27，则设置优先费为难度乘以 10000， 否则使用之前的优先费
+                            if difficulty > 24 {
+                                let mut prio_fee = app_prio_fee.lock().await;
+                                *prio_fee = (difficulty as u64 - 20) * 15000;
+                            }
+                            let mut tx = Transaction::new_with_payer(&ixs, Some(&signer.pubkey()));
+
+                            tx.sign(&[&signer], hash);
                             info!("Sending signed tx...");
                             info!("attempt: {}", i + 1);
                             info!("priority fee: {}", prio_fee);
@@ -454,7 +457,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     if *prio_fee >= 1_000 {
                                         *prio_fee = prio_fee.saturating_sub(1_000);
                                     }
-                                    let difficulty = solution.to_hash().difficulty();
                                     if difficulty > 24 {
                                         *prio_fee = 10000
                                     }
