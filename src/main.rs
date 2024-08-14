@@ -400,6 +400,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         for i in 0..3 {
                             info!("Sending signed tx...");
                             info!("attempt: {}", i + 1);
+                            info!("priority fee: {}", prio_fee);
                             let sig = rpc_client.send_and_confirm_transaction(&tx).await;
                             if let Ok(sig) = sig {
                                 // success
