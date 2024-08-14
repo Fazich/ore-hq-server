@@ -377,6 +377,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let mut ixs = vec![];
                             // TODO: set cu's
                             let prio_fee = { app_prio_fee.lock().await.clone() };
+                            if difficulty > 24 {
+                                let mut prio_fee = app_prio_fee.lock().await;
+                                *prio_fee = (difficulty as u64 - 20) * 15000;
+                                info!("Setting priority fee to {}", *prio_fee);
+                            }
 
                             let cu_limit_ix =
                                 ComputeBudgetInstruction::set_compute_unit_limit(480000);
@@ -393,11 +398,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             ixs.push(ix_mine);
 
                             // 如果难度大于等于27，则设置优先费为难度乘以 10000， 否则使用之前的优先费
-                            if difficulty > 24 {
-                                let mut prio_fee = app_prio_fee.lock().await;
-                                *prio_fee = (difficulty as u64 - 20) * 15000;
-                                info!("Setting priority fee to {}", *prio_fee);
-                            }
+
                             let mut tx = Transaction::new_with_payer(&ixs, Some(&signer.pubkey()));
 
                             tx.sign(&[&signer], hash);
