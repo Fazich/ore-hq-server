@@ -483,7 +483,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                 }
                                 // sent error
-                                if i >= 1 {
+                                if i >= 0 {
                                     // 进程退出
                                     std::process::exit(1);
                                     // info!("Failed to send after 3 attempts. Discarding and refreshing data.");
