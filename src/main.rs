@@ -382,6 +382,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "Starting mine submission attempts with difficulty {}.",
                         difficulty
                     );
+
+                    if difficulty >= 27 {
+                        let mut prio_fee = app_prio_fee.lock().await;
+                        // 如果难度大于等于27，则设置优先费为难度乘以 10000
+                        *prio_fee = (difficulty as u64) * 10000;
+                    }
+
                     if let Ok((hash, _slot)) = rpc_client
                         .get_latest_blockhash_with_commitment(rpc_client.commitment())
                         .await
