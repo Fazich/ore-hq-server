@@ -454,6 +454,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     if *prio_fee >= 1_000 {
                                         *prio_fee = prio_fee.saturating_sub(1_000);
                                     }
+                                    let difficulty = solution.to_hash().difficulty();
                                     if difficulty >= 27 {
                                         *prio_fee = 10000
                                     }
