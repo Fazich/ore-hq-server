@@ -387,9 +387,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if difficulty >= 27 {
                         let mut prio_fee = app_prio_fee.lock().await;
                         *prio_fee = (difficulty as u64) * 10000;
-                    } else {
-                        let mut prio_fee = app_prio_fee.lock().await;
-                        *prio_fee = *origin_prio_fee;
                     }
 
                     if let Ok((hash, _slot)) = rpc_client
@@ -457,6 +454,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     let mut prio_fee = app_prio_fee.lock().await;
                                     if *prio_fee >= 1_000 {
                                         *prio_fee = prio_fee.saturating_sub(1_000);
+                                    }
+                                    if difficulty >= 27 {
+                                        *prio_fee = 10000
                                     }
                                 }
                                 // reset nonce
