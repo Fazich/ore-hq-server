@@ -1,4 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{str::FromStr, time::{SystemTime, UNIX_EPOCH}};
 
 use bytemuck::{Pod, Zeroable};
 use drillx::Solution;
@@ -7,9 +7,10 @@ use ore_api::{
     state::{Config, Proof},
     ID as ORE_ID,
 };
-use ore_miner_delegation::{instruction, state::DelegatedStake, utils::AccountDeserialize};
+use ore_boost_api::state::{boost_pda, stake_pda};
+use ore_miner_delegation::{instruction, pda::managed_proof_pda, state::{DelegatedBoost, DelegatedStake}, utils::AccountDeserialize};
 use ore_utils::event;
-pub use ore_utils::AccountDeserialize as _;
+pub use steel::AccountDeserialize as _;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{account::ReadableAccount, instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::get_associated_token_address;
@@ -32,11 +33,25 @@ event!(MineEventWithBoosts);
 pub fn get_auth_ix(signer: Pubkey) -> Instruction {
     let proof = get_proof_pda(signer);
 
-    ore_api::instruction::auth(proof)
+    ore_api::prelude::auth(proof)
 }
 
 pub fn get_mine_ix(signer: Pubkey, solution: Solution, bus: usize) -> Instruction {
     instruction::mine(signer, BUS_ADDRESSES[bus], solution)
+}
+
+pub fn get_mine_ix_with_boosts(signer: Pubkey, solution: Solution, bus: usize, boost_mints: Vec<Pubkey>) -> Instruction {
+    let managed_proof_account = managed_proof_pda(signer);
+    let mut boosts = Vec::new();
+
+    for boost_mint in boost_mints {
+        let boost_account = boost_pda(boost_mint);
+        let boost_stake = stake_pda(managed_proof_account.0, boost_account.0);
+        boosts.push(boost_account.0);
+        boosts.push(boost_stake.0);
+    }
+
+    instruction::mine_with_boost(signer, BUS_ADDRESSES[bus], solution, boosts)
 }
 
 pub fn get_register_ix(signer: Pubkey) -> Instruction {
@@ -44,7 +59,7 @@ pub fn get_register_ix(signer: Pubkey) -> Instruction {
 }
 
 pub fn get_reset_ix(signer: Pubkey) -> Instruction {
-    ore_api::instruction::reset(signer)
+    ore_api::prelude::reset(signer)
 }
 
 pub fn get_claim_ix(signer: Pubkey, beneficiary: Pubkey, claim_amount: u64) -> Instruction {
@@ -98,6 +113,28 @@ pub async fn get_delegated_stake_account(
     }
 }
 
+pub async fn get_delegated_boost_account(
+    client: &RpcClient,
+    staker: Pubkey,
+    miner: Pubkey,
+    mint: Pubkey,
+) -> Result<ore_miner_delegation::state::DelegatedBoost, String> {
+    let data = client
+        .get_account_data(&get_delegated_boost_pda(staker, miner, mint))
+        .await;
+    match data {
+        Ok(data) => {
+            let delegated_boost = DelegatedBoost::try_from_bytes(&data);
+            if let Ok(delegated_boost) = delegated_boost {
+                return Ok(*delegated_boost);
+            } else {
+                return Err("Failed to parse delegated boost account".to_string());
+            }
+        }
+        Err(_) => return Err("Failed to get delegated boost account".to_string()),
+    }
+}
+
 pub fn get_delegated_stake_pda(staker: Pubkey, miner: Pubkey) -> Pubkey {
     let managed_proof = Pubkey::find_program_address(
         &[b"managed-proof-account", miner.as_ref()],
@@ -108,6 +145,24 @@ pub fn get_delegated_stake_pda(staker: Pubkey, miner: Pubkey) -> Pubkey {
         &[
             b"delegated-stake",
             staker.as_ref(),
+            managed_proof.0.as_ref(),
+        ],
+        &ore_miner_delegation::id(),
+    )
+    .0
+}
+
+pub fn get_delegated_boost_pda(staker: Pubkey, miner: Pubkey, mint: Pubkey) -> Pubkey {
+    let managed_proof = Pubkey::find_program_address(
+        &[b"managed-proof-account", miner.as_ref()],
+        &ore_miner_delegation::id(),
+    );
+
+    Pubkey::find_program_address(
+        &[
+            ore_miner_delegation::consts::DELEGATED_BOOST,
+            staker.as_ref(),
+            mint.as_ref(),
             managed_proof.0.as_ref(),
         ],
         &ore_miner_delegation::id(),
