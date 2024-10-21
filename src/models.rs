@@ -69,7 +69,7 @@ pub struct InsertClaim {
     pub amount: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, QueryableByName)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, QueryableByName)]
 #[diesel(table_name = crate::schema::miners)]
 #[diesel(check_for_backend(diesel::mysql::Mysql))]
 pub struct Miner {
@@ -197,4 +197,43 @@ pub struct InsertEarning {
     pub pool_id: i32,
     pub challenge_id: i32,
     pub amount: u64,
+}
+
+#[derive(Debug, Clone, Deserialize, Insertable)]
+#[diesel(table_name = crate::schema::stake_accounts)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
+pub struct InsertStakeAccount {
+    pub pool_id: i32,
+    pub mint_pubkey: String,
+    pub staker_pubkey: String,
+    pub stake_pda: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, QueryableByName)]
+#[diesel(table_name = crate::schema::stake_accounts)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
+pub struct StakeAccount {
+    pub id: i32,
+    pub pool_id: i32,
+    pub mint_pubkey: String,
+    pub staker_pubkey: String,
+    pub stake_pda: String,
+    pub rewards_balance: u64,
+    pub staked_balance: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, QueryableByName)]
+#[diesel(table_name = crate::schema::stake_accounts)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
+pub struct UpdateStakeAccount {
+    pub stake_pda: String,
+    pub staked_balance: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, QueryableByName)]
+#[diesel(table_name = crate::schema::stake_accounts)]
+#[diesel(check_for_backend(diesel::mysql::Mysql))]
+pub struct UpdateStakeAccountRewards {
+    pub stake_pda: String,
+    pub rewards_balance: u64,
 }
